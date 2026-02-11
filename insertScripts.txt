@@ -1,0 +1,4 @@
+INSERT INTO "MANAGER" (M_FirstName, M_LastName, M_BirthDate, M_Password)
+VALUES ('Minerva', 'McGonagall', 10/4/1932, 'transfigurationRocks1$!')
+
+INSERT INTO "STOCKER" (S_FirstName, S_LastName, S_BirthDate, S_Password, M_ID, IT_ID)
