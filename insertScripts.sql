@@ -12,3 +12,6 @@ VALUES ('Argus', 'Filch', '1944-03-16', 'mrs-Norris7#4', LAST_INSERT_ID(), 10000
 
 INSERT INTO PRODUCT (P_Cost, P_Weight, P_SaleCost, P_Name, P_Description, QuantityInStock, M_ID, P_Type)
 VALUES (1.49, 20, 2.79, 'Pumpkin Juice', 'Juice of the pumpkin variety', 43, 200000, 'Juice');
+
+INSERT INTO STOCKS (S_ID, P_ID)
+VALUES (300000, 1000000);
