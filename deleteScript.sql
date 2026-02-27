@@ -1,3 +1,4 @@
+SET SQL_SAFE_UPDATES = 0;
 DELETE FROM STOCKS
 WHERE S_ID = 300000 AND P_ID = 1000000;
 
@@ -15,3 +16,7 @@ WHERE M_FirstName = 'Minerva' AND M_LastName = 'McGonagall';
 
 DELETE FROM IT
 WHERE IT_FirstName = 'Severus' AND IT_LastName = 'Snape';
+
+
+SET SQL_SAFE_UPDATES = 1;
+
