@@ -23,6 +23,6 @@ SELECT
   PRODUCT.P_CostPerOunce,
   PRODUCT.P_SaleCostPerOunce,
   LOCATION.StoreAisle, 
-  LOCATION.P_Type AS Category
+  LOCATION.P_Type AS ProductCategory
 FROM PRODUCT
 JOIN LOCATION ON PRODUCT.L_ID = LOCATION.L_ID;
