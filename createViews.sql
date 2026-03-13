@@ -31,3 +31,31 @@ CREATE OR REPLACE VIEW manager_management_page AS
 SELECT STOCKER.S_FirstName, STOCKER.S_LastName, STOCKER.S_BirthDate, STOCKER.M_ID
 FROM STOCKER
 JOIN MANAGER ON STOCKER.M_ID = MANAGER.M_ID;
+
+CREATE OR REPLACE VIEW it_view AS
+SELECT 
+  IT_ID AS EmployeeID,
+  IT_FirstName AS FirstName,
+  IT_LastName AS LastName,
+  IT_BirthDate AS BirthDate,
+  'IT' AS Role,
+  NULL AS ManagerID
+FROM IT
+UNION ALL
+SELECT 
+  M_ID AS EmployeeID,
+  M_FirstName AS FirstName,
+  M_LastName AS LastName,
+  M_BirthDate AS BirthDate,
+  'Manager' AS Role,
+  NULL AS ManagerID
+FROM MANAGER
+UNION ALL
+SELECT 
+  S_ID AS EmployeeID,
+  S_FirstName AS FirstName,
+  S_LastName AS LastName,
+  S_BirthDate AS BirthDate,
+  'Stocker' AS Role,
+  M_ID AS ManagerID
+FROM STOCKER;
