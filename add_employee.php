@@ -23,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($e = validatePassword($pw))                           $errors['pw']       = $e;
     if ($role === 'Stocker' && !$mID)                         $errors['manager']  = 'Please assign a manager.';
     if (in_array($role, ['Manager','Stocker']) && !$itID)     $errors['it']       = 'Please assign an IT staff member.';
-    
     if (empty($errors)) {
         $hashedPw = password_hash($pw, PASSWORD_DEFAULT);
         if ($role === 'IT') {

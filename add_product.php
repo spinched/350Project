@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wt   = $_POST['weight'] ?? '';
     $qty  = $_POST['qty'] ?? '';
     $desc = trim($_POST['desc'] ?? '');
+    $mid   = (int)($_POST['manager'] ?? 0);
 
     if (!$name)                                           $errors['name']   = 'Product name is required.';
     elseif (strlen($name) > 50)                           $errors['name']   = 'Max 50 characters.';
@@ -26,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$wt || (float)$wt <= 0)                          $errors['weight'] = 'Enter a valid weight > 0.';
     if ($qty === '' || (int)$qty < 0 || (int)$qty > 9999) $errors['qty']    = 'Quantity must be 0–9999.';
     if (!$desc)                                           $errors['desc']   = 'Description is required.';
+    if (!$mid)                                            $errors['mid']    = 'Please assign a manager.';
     
     if (empty($errors)) {
         $loc = null;
@@ -46,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wtF   = round((float)$wt, 2);
         $sale = $sale !== '' ? round((float)$sale, 2) : null;
         $qty = $qty !== '' ? (int)$qty : 0;
-        $mid = $_SESSION['role'] === 'IT' ? 209999 : $_SESSION['user_id'];
 
         $stmt = $conn->prepare("INSERT INTO PRODUCT (P_Name, P_Description, P_Cost, P_SaleCost, P_Weight, QuantityInStock, L_ID, M_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param('ssdddiii', $name, $desc, $costF, $sale, $wtF, $qty, $lid, $mid);
@@ -138,6 +139,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <textarea id="desc" name="desc" maxlength="300" rows="3" placeholder="Up to 300 characters…"
                   class="<?= isset($errors['desc']) ? 'input-error' : '' ?>"><?= htmlspecialchars($_POST['desc'] ?? '') ?></textarea>
         <?php if (isset($errors['desc'])): ?><span class="field-error"><?= $errors['desc'] ?></span><?php endif; ?>
+      </div>
+
+      <div class="field-group field-group-full">
+        <label for="manager">Responsible Manager for Product Creation*</label>
+        <select id="manager" name="manager" class="<?= isset($errors['manager']) ? 'input-error' : '' ?>">
+          <option value="">Select manager…</option>
+          <?php 
+            $managers = getAllManagers($conn);
+            foreach ($managers as $m):
+          ?>
+            <option value="<?= $m['M_ID'] ?>"<?= ($_POST['manager'] ?? '') == $m['M_ID'] ? ' selected' : '' ?>>
+              <?= htmlspecialchars($m['M_FirstName'] . ' ' . $m['M_LastName']) ?> (<?= $m['M_ID'] ?>)
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <?php if (isset($errors['manager'])): ?><span class="field-error"><?= $errors['manager'] ?></span><?php endif; ?>
       </div>
 
     </div>
