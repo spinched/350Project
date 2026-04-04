@@ -34,19 +34,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (strtolower($l['P_Type']) === strtolower($type)) { $loc = $l; break; }
         }
         if (!$loc) {
-            $stmt = $conn->prepare("INSERT INTO LOCATIONS (StoreAisle, P_Type) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param('ss', 99, $type);
+            $aisle = 99;
+            $stmt = $conn->prepare("INSERT INTO LOCATION (StoreAisle, P_Type) VALUES (?, ?)");
+            $stmt->bind_param('is', $aisle, $type);
             $stmt->execute();
+            $lid = $conn->insert_id;
+        } else {
+          $lid = $loc['L_ID'];
         }
         $costF = round((float)$cost, 2);
         $wtF   = round((float)$wt, 2);
         $sale = $sale !== '' ? round((float)$sale, 2) : null;
-        $qty = (int)qty;
-        $m_id = //ID of WHO'S LOGGED IN???
+        $qty = $qty !== '' ? (int)$qty : 0;
+        $mid = $_SESSION['role'] === 'IT' ? 209999 : $_SESSION['user_id'];
 
+        $stmt = $conn->prepare("INSERT INTO PRODUCT (P_Name, P_Description, P_Cost, P_SaleCost, P_Weight, QuantityInStock, L_ID, M_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('ssdddiii', $name, $desc, $costF, $sale, $wtF, $qty, $lid, $mid);
 
-        $_SESSION['toast'] = "\"$name\" added to inventory.";
-        header('Location: stocking.php'); exit;
+        try {
+          $stmt->execute();
+          $_SESSION['toast'] = "\"$name\" added to inventory.";
+          header('Location: stocking.php'); exit;
+        } catch (mysqli_sql_exception $e) {
+          $errors['general'] = 'Failed to add product. Please try again.';
+        }
     }
 }
 ?>
@@ -83,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="type">Product Type *</label>
         <select id="type" name="type" class="<?= isset($errors['type']) ? 'input-error' : '' ?>">
           <option value="">Select type…</option>
-          <?php foreach (['vegetables','dairy','poultry','beef','canned goods','frozen goods'] as $t): ?>
+          <?php foreach (['fruit','vegetables','dairy','poultry','beef','fish','canned goods','frozen goods','pasta','spices','beverages','bakery','snacks','baking','household','beauty','health'] as $t): ?>
             <option value="<?= $t ?>"<?= ($_POST['type'] ?? '') === $t ? ' selected' : '' ?>><?= ucfirst($t) ?></option>
           <?php endforeach; ?>
         </select>

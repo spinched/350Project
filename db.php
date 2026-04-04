@@ -47,6 +47,14 @@ function getAllProductsOnSale(mysqli $conn): array {
     return is_array($value) ? $value : [];
 }
 
+function getEmployee(mysqli $conn, int $eid): array {
+    $stmt = $conn->prepare("SELECT * FROM all_employees WHERE EmployeeID = ?");
+    $stmt->bind_param('i', $pid);
+    $stmt->execute();
+    $value = $stmt->get_result()->fetch_assoc();
+    return is_array($value) ? $value : [];
+}
+
 function getAllEmployees(mysqli $conn): array {
     $sql = "SELECT * FROM all_employees";
     $result = mysqli_query($conn, $sql);
