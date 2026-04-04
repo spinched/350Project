@@ -49,7 +49,7 @@ function getAllProductsOnSale(mysqli $conn): array {
 
 function getEmployee(mysqli $conn, int $eid): array {
     $stmt = $conn->prepare("SELECT * FROM all_employees WHERE EmployeeID = ?");
-    $stmt->bind_param('i', $pid);
+    $stmt->bind_param('i', $eid);
     $stmt->execute();
     $value = $stmt->get_result()->fetch_assoc();
     return is_array($value) ? $value : [];

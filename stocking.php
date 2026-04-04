@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAccess(['Manager','IT'])) {
         $stmt->bind_param('i', $pid);
         try {
           $stmt->execute();
-          $_SESSION['toast'] = 'Stocker removed.';
+          $_SESSION['toast'] = 'Product removed.';
         } catch (mysqli_sql_exception $e) {
           $_SESSION['toast'] = 'An unexpected error occurred.';
         }

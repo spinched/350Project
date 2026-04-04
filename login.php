@@ -11,10 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$password) $errors['password'] = 'Password is required.';
 
     if (empty($errors)) {
-        $stmt = $conn->prepare("SELECT EmployeeID, FirstName, Password, Role FROM all_employees WHERE EmployeeID = ?");
-        $stmt->bind_param('s', $e_id);
-        $stmt->execute();
-        $user = $stmt->get_result()->fetch_assoc();
+        $user = getEmployee($conn, $e_id);
 
         if (!$user || !password_verify($password, $user['Password'])) {
             $errors['general'] = 'Invalid ID or password.';
