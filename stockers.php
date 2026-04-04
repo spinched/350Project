@@ -8,13 +8,24 @@ unset($_SESSION['toast']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAccess(['Manager','IT'])) {
     if (($_POST['action'] ?? '') === 'delete') {
         $sid = (int)$_POST['sid'];
-        $_SESSION['db']['stockers'] = array_values(
-            array_filter($_SESSION['db']['stockers'], fn($s) => $s['S_ID'] !== $sid)
-        );
-        $_SESSION['toast'] = 'Stocker removed.';
+        $stmt = $conn->prepare("DELETE FROM STOCKER WHERE S_ID = ?");
+        $stmt->bind_param('i', $sid);
+        try {
+          $stmt->execute();
+          $_SESSION['toast'] = 'Stocker removed.';
+        } catch (mysqli_sql_exception $e) {
+          if ($e->getCode() === 1451) {
+              $_SESSION['toast'] = 'Cannot delete this employee — they still have staff or products assigned to them. Contact IT for assistance with this issue.';
+          } else {
+              $_SESSION['toast'] = 'An unexpected error occurred.';
+          }
+        }
         header('Location: stockers.php'); exit;
     }
 }
+
+$stockers = getAllStockers($conn);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -62,21 +73,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAccess(['Manager','IT'])) {
         </tr>
       </thead>
       <tbody>
-        <?php if (empty($_SESSION['db']['stockers'])): ?>
+        <?php if (empty($stockers)): ?>
           <tr><td colspan="5" class="empty-msg">No stockers found.</td></tr>
         <?php else: ?>
-          <?php foreach ($_SESSION['db']['stockers'] as $s): ?>
+          <?php foreach ($stockers as $s): ?>
           <tr>
             <td><strong><?= htmlspecialchars($s['S_FirstName'] . ' ' . $s['S_LastName']) ?></strong></td>
             <td class="mono"><?= $s['S_ID'] ?></td>
             <td><?= fmtDate($s['S_BirthDate']) ?></td>
             <td class="mono"><?= $s['M_ID'] ?></td>
             <td>
-              <form method="post" style="margin:0" onsubmit="return confirm('Remove this stocker? This cannot be undone.')">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="sid" value="<?= $s['S_ID'] ?>">
-                <button type="submit" class="btn-icon btn-danger" title="Remove">🗑</button>
-              </form>
+              <div style="display:flex; gap:6px;">
+                <a href="edit_stocker.php?id=<?= $s['S_ID'] ?>&role=<?= $s['Role'] ?>" 
+                    class="btn-icon btn-edit" title="Edit">✏️</a>
+                <form method="post" style="margin:0" onsubmit="return confirm('Remove this stocker? This cannot be undone.')">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="sid" value="<?= $s['S_ID'] ?>">
+                  <button type="submit" class="btn-icon btn-danger" title="Remove">🗑</button>
+                </form>
+              </div>
             </td>
           </tr>
           <?php endforeach; ?>

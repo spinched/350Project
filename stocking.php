@@ -8,10 +8,14 @@ unset($_SESSION['toast']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAccess(['Manager','IT'])) {
     if (($_POST['action'] ?? '') === 'delete') {
         $pid = (int)$_POST['pid'];
-        $_SESSION['db']['products'] = array_values(
-            array_filter($_SESSION['db']['products'], fn($p) => $p['P_ID'] !== $pid)
-        );
-        $_SESSION['toast'] = 'Product deleted.';
+        $stmt = $conn->prepare("DELETE FROM PRODUCT WHERE P_ID = ?");
+        $stmt->bind_param('i', $pid);
+        try {
+          $stmt->execute();
+          $_SESSION['toast'] = 'Stocker removed.';
+        } catch (mysqli_sql_exception $e) {
+          $_SESSION['toast'] = 'An unexpected error occurred.';
+        }
         header('Location: stocking.php'); exit;
     }
 
@@ -20,17 +24,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAccess(['Manager','IT'])) {
         $pid = (int)$_POST['pid'];
         $qty = (int)$_POST['qty'];
         if ($qty >= 0 && $qty <= 9999) {
-            foreach ($_SESSION['db']['products'] as &$p) {
-                if ($p['P_ID'] === $pid) { $p['QuantityInStock'] = $qty; break; }
+            $stmt = $conn->prepare("UPDATE PRODUCT SET QuantityInStock = ? WHERE P_ID = ?");
+            $stmt->bind_param('ii', $qty, $pid);
+            try {
+                $stmt->execute();
+                $_SESSION['toast'] = 'Quantity updated.';
+            } catch (mysqli_sql_exception $e) {
+                $_SESSION['toast'] = 'Failed to update quantity.';
             }
-            unset($p);
+        } else {
+            $_SESSION['toast'] = 'Invalid quantity — must be 0–9999.';
         }
-        $_SESSION['toast'] = 'Quantity updated.';
         header('Location: stocking.php'); exit;
     }
 }
 
-$products  = getAllProductsWithLocation();
+$products  = getAllProducts($conn);
 $canEdit   = hasAccess(['Manager','IT']);
 ?>
 <!DOCTYPE html>
@@ -115,11 +124,14 @@ $canEdit   = hasAccess(['Manager','IT']);
           <td class="desc-cell"><?= htmlspecialchars($p['P_Description']) ?></td>
           <?php if ($canEdit): ?>
           <td>
-            <form method="post" style="margin:0" onsubmit="return confirm('Delete this product? This cannot be undone.')">
-              <input type="hidden" name="action" value="delete">
-              <input type="hidden" name="pid" value="<?= $p['P_ID'] ?>">
-              <button type="submit" class="btn-icon btn-danger" title="Delete">🗑</button>
-            </form>
+            <div style="display:flex; gap:6px;">
+              <a href="edit_product.php?id=<?= $p['P_ID'] ?>" class="btn-icon btn-edit" title="Edit">✏️</a>
+              <form method="post" style="margin:0" onsubmit="return confirm('Delete this product? This cannot be undone.')">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="pid" value="<?= $p['P_ID'] ?>">
+                <button type="submit" class="btn-icon btn-danger" title="Delete">🗑</button>
+              </form>
+            </div>
           </td>
           <?php endif; ?>
         </tr>

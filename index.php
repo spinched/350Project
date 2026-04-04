@@ -5,15 +5,18 @@ $activePage = 'store';
 $q    = strtolower(trim($_GET['q'] ?? ''));
 $type = strtolower(trim($_GET['type'] ?? ''));
 
-$products = array_filter(getAllProductsWithLocation(), function($p) use ($q, $type) {
+$products = array_filter(getAllProducts($conn), function($p) use ($q, $type) {
     $matchQ    = !$q    || str_contains(strtolower($p['P_Name']), $q)
                         || str_contains(strtolower($p['P_Type']), $q)
                         || str_contains(strtolower($p['P_Description']), $q);
     $matchType = !$type || strtolower($p['P_Type']) === $type;
     return $matchQ && $matchType;
-});
+  });
 
-$sales = array_filter($products, fn($p) => $p['P_SaleCost'] !== null);
+$sales = getAllProductsOnSale($conn);
+
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +39,7 @@ $sales = array_filter($products, fn($p) => $p['P_SaleCost'] !== null);
            style="padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius); font-family:var(--font-body); font-size:0.9rem; flex:1; min-width:200px;" />
     <select name="type" style="padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius); font-family:var(--font-body); font-size:0.9rem;">
       <option value="">All Categories</option>
-      <?php foreach (['vegetables','dairy','poultry','beef','canned goods','frozen goods'] as $t): ?>
+      <?php foreach (['vegetables','dairy','poultry','beef','canned goods','frozen goods','fruit','fish','pasta','spices','beverages','bakery','snacks','baking','household','beauty','health'] as $t):?>
         <option value="<?= $t ?>"<?= $type === $t ? ' selected' : '' ?>><?= ucfirst($t) ?></option>
       <?php endforeach; ?>
     </select>
@@ -48,12 +51,11 @@ $sales = array_filter($products, fn($p) => $p['P_SaleCost'] !== null);
 </div>
 
 <main style="max-width:1200px; margin:0 auto; padding:0 24px 60px;">
-
-  <?php if (!empty($sales)): ?>
+  <?php if (empty($q) && empty($type) && !empty($sales)): ?>
   <section class="section">
     <h2 class="section-title"><span class="section-title-icon">🏷️</span> Sales This Week</h2>
     <div class="product-grid">
-      <?php foreach ($sales as $p): ?>
+      <?php foreach ($sales as $p):?>
         <a href="product.php?id=<?= $p['P_ID'] ?>" class="product-card">
           <div class="card-image <?= getCategoryClass($p['P_Type']) ?>">
             <span class="card-emoji"><?= getCategoryEmoji($p['P_Type']) ?></span>
@@ -79,7 +81,7 @@ $sales = array_filter($products, fn($p) => $p['P_SaleCost'] !== null);
       <p class="empty-msg">No products match your search.</p>
     <?php else: ?>
       <div class="product-grid">
-        <?php foreach ($products as $p): ?>
+        <?php foreach ($products as $p):?>
           <a href="product.php?id=<?= $p['P_ID'] ?>" class="product-card">
             <div class="card-image <?= getCategoryClass($p['P_Type']) ?>">
               <span class="card-emoji"><?= getCategoryEmoji($p['P_Type']) ?></span>

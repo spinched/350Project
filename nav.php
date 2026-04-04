@@ -1,5 +1,6 @@
 <?php
 // $activePage must be set before including this file
+
 $role = getRole();
 $links = [
     ['href'=>'index.php',    'label'=>'Store',     'page'=>'store',     'roles'=>['Customer','Stocker','Manager','IT']],
@@ -25,15 +26,17 @@ $roles = ['Customer','Stocker','Manager','IT'];
       <?php endforeach; ?>
     </div>
     <div class="nav-role">
-      <span class="role-label">Role:</span>
-      <form method="post" action="set_role.php" style="margin:0">
-        <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
-        <select name="role" class="role-select" onchange="this.form.submit()">
-          <?php foreach ($roles as $r): ?>
-            <option value="<?= $r ?>"<?= $r === $role ? ' selected' : '' ?>><?= $r ?></option>
-          <?php endforeach; ?>
-        </select>
-      </form>
+      <span class="role-label"></span>
+        <div class="nav-role">
+          <?php if ($role === 'Customer'): ?>
+            <?php if ($activePage !== 'login'): ?>
+              <a href="login.php" class="btn btn-primary">Employee Login</a>
+            <?php endif; ?>
+          <?php else: ?>
+            <span class="role-label"><?= htmlspecialchars($_SESSION['name'] ?? '') ?></span>
+            <a href="logout.php" class="btn btn-primary">Logout</a>
+          <?php endif; ?>
+        </div>
     </div>
   </div>
 </nav>

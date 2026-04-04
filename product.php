@@ -2,11 +2,11 @@
 require 'db.php';
 $activePage = 'store';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$p  = $id ? getProductWithLocation($id) : null;
+$p  = $id ? getProduct($conn, $id) : null;
 if ($p) {
     $onSale   = $p['P_SaleCost'] !== null;
     $lowStock = $p['QuantityInStock'] < 20;
-    $cpoz     = $p['P_CostPerOunce'] ?? ($p['P_Cost'] / ($p['P_Weight'] * 16));
+    $cpoz     = $p['P_Cost'] / ($p['P_Weight'] * 16);
     $saleCpoz = $onSale ? ($p['P_SaleCost'] / ($p['P_Weight'] * 16)) : null;
 }
 ?>

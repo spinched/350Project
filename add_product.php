@@ -7,6 +7,8 @@ if (!hasAccess(['Manager','IT'])) {
     header('Location: stocking.php'); exit;
 }
 
+$locations = getAllLocations($conn);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $type = trim($_POST['type'] ?? '');
@@ -16,39 +18,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $qty  = $_POST['qty'] ?? '';
     $desc = trim($_POST['desc'] ?? '');
 
-    if (!$name)                             $errors['name']   = 'Product name is required.';
-    elseif (strlen($name) > 50)             $errors['name']   = 'Max 50 characters.';
-    if (!$type)                             $errors['type']   = 'Please select a product type.';
-    if (!$cost || (float)$cost <= 0)        $errors['cost']   = 'Enter a valid price > 0.';
-    if ($sale !== '' && (float)$sale <= 0)  $errors['sale']   = 'Sale price must be > 0 if set.';
-    if (!$wt || (float)$wt <= 0)           $errors['weight'] = 'Enter a valid weight > 0.';
-    if ($qty === '' || (int)$qty < 0 || (int)$qty > 9999) $errors['qty'] = 'Quantity must be 0–9999.';
-    if (!$desc)                             $errors['desc']   = 'Description is required.';
-
+    if (!$name)                                           $errors['name']   = 'Product name is required.';
+    elseif (strlen($name) > 50)                           $errors['name']   = 'Max 50 characters.';
+    if (!$type)                                           $errors['type']   = 'Please select a product type.';
+    if (!$cost || (float)$cost <= 0)                      $errors['cost']   = 'Enter a valid price > 0.';
+    if ($sale !== '' && (float)$sale <= 0)                $errors['sale']   = 'Sale price must be > 0 if set.';
+    if (!$wt || (float)$wt <= 0)                          $errors['weight'] = 'Enter a valid weight > 0.';
+    if ($qty === '' || (int)$qty < 0 || (int)$qty > 9999) $errors['qty']    = 'Quantity must be 0–9999.';
+    if (!$desc)                                           $errors['desc']   = 'Description is required.';
+    
     if (empty($errors)) {
         $loc = null;
-        foreach ($_SESSION['db']['locations'] as $l) {
+        
+        foreach ($locations as $l) {
             if (strtolower($l['P_Type']) === strtolower($type)) { $loc = $l; break; }
         }
         if (!$loc) {
-            $newLID = 400000 + count($_SESSION['db']['locations']);
-            $loc = ['L_ID'=>$newLID,'StoreAisle'=>'99','P_Type'=>$type];
-            $_SESSION['db']['locations'][] = $loc;
+            $stmt = $conn->prepare("INSERT INTO LOCATIONS (StoreAisle, P_Type) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param('ss', 99, $type);
+            $stmt->execute();
         }
         $costF = round((float)$cost, 2);
         $wtF   = round((float)$wt, 2);
-        $_SESSION['db']['products'][] = [
-            'P_ID'            => $_SESSION['db']['_nextProduct']++,
-            'P_Name'          => $name,
-            'P_Description'   => $desc,
-            'P_Cost'          => $costF,
-            'P_SaleCost'      => $sale !== '' ? round((float)$sale, 2) : null,
-            'P_Weight'        => $wtF,
-            'P_CostPerOunce'  => round($costF / ($wtF * 16), 4),
-            'QuantityInStock' => (int)$qty,
-            'M_ID'            => $_SESSION['db']['managers'][0]['M_ID'],
-            'L_ID'            => $loc['L_ID'],
-        ];
+        $sale = $sale !== '' ? round((float)$sale, 2) : null;
+        $qty = (int)qty;
+        $m_id = //ID of WHO'S LOGGED IN???
+
+
         $_SESSION['toast'] = "\"$name\" added to inventory.";
         header('Location: stocking.php'); exit;
     }

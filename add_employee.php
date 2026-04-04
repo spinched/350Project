@@ -13,23 +13,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $last  = trim($_POST['last']     ?? '');
     $dob   = trim($_POST['dob']      ?? '');
     $pw    = $_POST['pw']            ?? '';
-    $mid   = (int)($_POST['manager'] ?? 0);
+    $mID   = (int)($_POST['manager'] ?? 0);
+    $itID  = (int)($_POST['it']      ?? 0);
 
-    if (!in_array($role, ['IT','Manager','Stocker'])) $errors['role'] = 'Please select a role.';
-    if ($e = validateName($first, 'First name'))  $errors['first']   = $e;
-    if ($e = validateName($last,  'Last name'))   $errors['last']    = $e;
-    if (!$dob || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) $errors['dob'] = 'Date of birth is required.';
-    if ($e = validatePassword($pw))               $errors['pw']      = $e;
-    if ($role === 'Stocker' && !$mid)             $errors['manager'] = 'Please assign a manager.';
-
+    if (!in_array($role, ['IT','Manager','Stocker']))         $errors['role']     = 'Please select a role.';
+    if ($e = validateName($first, 'First name'))              $errors['first']    = $e;
+    if ($e = validateName($last,  'Last name'))               $errors['last']     = $e;
+    if (!$dob || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob))  $errors['dob']      = 'Date of birth is required.';
+    if ($e = validatePassword($pw))                           $errors['pw']       = $e;
+    if ($role === 'Stocker' && !$mID)                         $errors['manager']  = 'Please assign a manager.';
+    if (in_array($role, ['Manager','Stocker']) && !$itID)     $errors['it']       = 'Please assign an IT staff member.';
+    
     if (empty($errors)) {
-        $itID = $_SESSION['db']['it'][0]['IT_ID'] ?? null;
+        $hashedPw = password_hash($pw, PASSWORD_DEFAULT);
         if ($role === 'IT') {
-            $_SESSION['db']['it'][] = ['IT_ID'=>$_SESSION['db']['_nextIT']++,'IT_FirstName'=>$first,'IT_LastName'=>$last,'IT_BirthDate'=>$dob];
+            $stmt = $conn->prepare("INSERT INTO IT (IT_FirstName, IT_LastName, IT_BirthDate, IT_Password) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param('ssss', $first, $last, $dob, $hashedPw);
+            $stmt->execute();
         } elseif ($role === 'Manager') {
-            $_SESSION['db']['managers'][] = ['M_ID'=>$_SESSION['db']['_nextManager']++,'M_FirstName'=>$first,'M_LastName'=>$last,'M_BirthDate'=>$dob,'IT_ID'=>$itID];
-        } else {
-            $_SESSION['db']['stockers'][] = ['S_ID'=>$_SESSION['db']['_nextStocker']++,'S_FirstName'=>$first,'S_LastName'=>$last,'S_BirthDate'=>$dob,'M_ID'=>$mid,'IT_ID'=>$itID];
+            $stmt = $conn->prepare("INSERT INTO MANAGER (M_FirstName, M_LastName, M_BirthDate, M_Password, IT_ID) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssi', $first, $last, $dob, $hashedPw, $itID);
+            $stmt->execute();
+        } else if ($role === 'Stocker') {
+            $stmt = $conn->prepare("INSERT INTO STOCKER (S_FirstName, S_LastName, S_BirthDate, S_Password, M_ID, IT_ID) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param('ssssii', $first, $last, $dob, $hashedPw, $mID, $itID);
+            $stmt->execute();
         }
         $_SESSION['toast'] = "$first $last added as $role.";
         header('Location: employees.php'); exit;
@@ -76,13 +84,31 @@ $selectedRole = $_POST['role'] ?? '';
         <label for="manager">Assigned Manager *</label>
         <select id="manager" name="manager" class="<?= isset($errors['manager']) ? 'input-error' : '' ?>">
           <option value="">Select manager…</option>
-          <?php foreach ($_SESSION['db']['managers'] as $m): ?>
+          <?php 
+            $managers = getAllManagers($conn);
+            foreach ($managers as $m):
+          ?>
             <option value="<?= $m['M_ID'] ?>"<?= ($_POST['manager'] ?? '') == $m['M_ID'] ? ' selected' : '' ?>>
               <?= htmlspecialchars($m['M_FirstName'] . ' ' . $m['M_LastName']) ?> (<?= $m['M_ID'] ?>)
             </option>
           <?php endforeach; ?>
         </select>
         <?php if (isset($errors['manager'])): ?><span class="field-error"><?= $errors['manager'] ?></span><?php endif; ?>
+      </div>
+      <?php endif; ?>
+
+      <?php if ($selectedRole === 'Manager' || $selectedRole === 'Stocker'): ?>
+      <div class="field-group field-group-full">
+        <label for="it">Assigned IT Staff *</label>
+        <select id="it" name="it" class="<?= isset($errors['it']) ? 'input-error' : '' ?>">
+          <option value="">Select IT staff…</option>
+          <?php foreach (getAllIT($conn) as $i): ?>
+            <option value="<?= $i['IT_ID'] ?>"<?= ($_POST['it'] ?? '') == $i['IT_ID'] ? ' selected' : '' ?>>
+              <?= htmlspecialchars($i['IT_FirstName'] . ' ' . $i['IT_LastName']) ?> (<?= $i['IT_ID'] ?>)
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <?php if (isset($errors['it'])): ?><span class="field-error"><?= $errors['it'] ?></span><?php endif; ?>
       </div>
       <?php endif; ?>
 
@@ -120,6 +146,7 @@ $selectedRole = $_POST['role'] ?? '';
     </div>
 
     <?php if ($selectedRole): ?>
+
     <div style="display:flex; gap:10px; margin-top:24px;">
       <button type="submit" name="submit" value="1" class="btn btn-primary">Add Employee</button>
       <a href="employees.php" class="btn btn-ghost">Cancel</a>

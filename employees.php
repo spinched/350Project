@@ -8,20 +8,33 @@ unset($_SESSION['toast']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasAccess(['IT'])) {
     if (($_POST['action'] ?? '') === 'delete') {
         $id   = (int)$_POST['eid'];
-        $role = $_POST['erole'] ?? '';
-        if ($role === 'IT') {
-            $_SESSION['db']['it'] = array_values(array_filter($_SESSION['db']['it'], fn($e) => $e['IT_ID'] !== $id));
-        } elseif ($role === 'Manager') {
-            $_SESSION['db']['managers'] = array_values(array_filter($_SESSION['db']['managers'], fn($e) => $e['M_ID'] !== $id));
-        } else {
-            $_SESSION['db']['stockers'] = array_values(array_filter($_SESSION['db']['stockers'], fn($e) => $e['S_ID'] !== $id));
+        $role = strtoupper($_POST['erole'] ?? '');
+        $col = match($role){
+          'IT'      => 'IT_ID',
+          'MANAGER' => 'M_ID',
+          'STOCKER' => 'S_ID',
+           default   => null
+        };
+        if ($col) {
+          $stmt = $conn->prepare("DELETE FROM $role WHERE $col= ?");
+          $stmt->bind_param('i', $id);
+          try {
+            $stmt->execute();
+            $_SESSION['toast'] = 'Employee removed.';
+          } catch (mysqli_sql_exception $e) {
+            if ($e->getCode() === 1451) {
+                $_SESSION['toast'] = 'Cannot delete this employee — they still have staff or products assigned to them. Please reassign them first.';
+            } else {
+                $_SESSION['toast'] = 'An unexpected error occurred.';
+            }
+          }
         }
-        $_SESSION['toast'] = 'Employee removed.';
         header('Location: employees.php'); exit;
     }
 }
 
-$employees = getAllEmployees();
+$employees = getAllEmployees($conn);
+
 $roleBadge = ['IT'=>'badge-it','Manager'=>'badge-manager','Stocker'=>'badge-stocker'];
 ?>
 <!DOCTYPE html>
@@ -76,18 +89,22 @@ $roleBadge = ['IT'=>'badge-it','Manager'=>'badge-manager','Stocker'=>'badge-stoc
         <?php else: ?>
           <?php foreach ($employees as $e): ?>
           <tr>
-            <td><strong><?= htmlspecialchars($e['firstName'] . ' ' . $e['lastName']) ?></strong></td>
-            <td class="mono"><?= $e['id'] ?></td>
-            <td><?= fmtDate($e['birthDate']) ?></td>
-            <td><span class="badge <?= $roleBadge[$e['role']] ?? '' ?>"><?= $e['role'] ?></span></td>
-            <td class="mono"><?= $e['managerID'] ?? '—' ?></td>
+            <td><strong><?= htmlspecialchars($e['FirstName'] . ' ' . $e['LastName']) ?></strong></td>
+            <td class="mono"><?= $e['EmployeeID'] ?></td>
+            <td><?= fmtDate($e['BirthDate']) ?></td>
+            <td><span class="badge <?= $roleBadge[$e['Role']] ?? '' ?>"><?= $e['Role'] ?></span></td>
+            <td class="mono"><?= $e['ManagerID'] ?? '—' ?></td>
             <td>
-              <form method="post" style="margin:0" onsubmit="return confirm('Remove this employee? This cannot be undone.')">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="eid"   value="<?= $e['id'] ?>">
-                <input type="hidden" name="erole" value="<?= $e['role'] ?>">
-                <button type="submit" class="btn-icon btn-danger" title="Delete">🗑</button>
-              </form>
+              <div style="display:flex; gap:6px;">
+                <a href="edit_employee.php?id=<?= $e['EmployeeID'] ?>&role=<?= $e['Role'] ?>" 
+                    class="btn-icon btn-edit" title="Edit">✏️</a>
+                <form method="post" style="margin:0" onsubmit="return confirm('Remove this employee? This cannot be undone.')">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="eid"   value="<?= $e['EmployeeID'] ?>">
+                  <input type="hidden" name="erole" value="<?= $e['Role'] ?>">
+                  <button type="submit" class="btn-icon btn-danger" title="Delete">🗑</button>
+                </form>
+              </div>  
             </td>
           </tr>
           <?php endforeach; ?>
