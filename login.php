@@ -49,8 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="form-grid">
       <div class="field-group">
         <label for="e_id">ID Number *</label>
+        <input id="e_id" name="e_id" type="text"
                value="<?= htmlspecialchars($_POST['e_id'] ?? '') ?>"
-               class="<?= isset($errors['e_id']) ? 'input-error' : '' ?>" />
+               class="<?= isset($errors['e_id']) ? 'input-error' : '' ?>" />    
         <?php if (isset($errors['e_id'])): ?>
           <span class="field-error"><?= $errors['e_id'] ?></span>
         <?php endif; ?>
