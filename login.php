@@ -1,6 +1,5 @@
 <?php
 require 'db.php';
-session_start();
 $activePage = 'login';
 $errors = [];
 
