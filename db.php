@@ -55,6 +55,14 @@ function getEmployee(mysqli $conn, int $eid): array {
     return is_array($value) ? $value : [];
 }
 
+function getStocker(mysqli $conn, int $eid): array {
+    $stmt = $conn->prepare("SELECT * FROM all_stockers WHERE S_ID = ?");
+    $stmt->bind_param('i', $eid);
+    $stmt->execute();
+    $value = $stmt->get_result()->fetch_assoc();
+    return is_array($value) ? $value : [];
+}
+
 function getAllEmployees(mysqli $conn): array {
     $sql = "SELECT * FROM all_employees";
     $result = mysqli_query($conn, $sql);
