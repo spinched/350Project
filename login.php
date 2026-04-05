@@ -1,5 +1,6 @@
 <?php
 require 'db.php';
+session_start();
 $activePage = 'login';
 $errors = [];
 
@@ -16,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$user || !password_verify($password, $user['Password'])) {
             $errors['general'] = 'Invalid ID or password.';
         } else {
+            session_regenerate_id(true);
             $_SESSION['role']     = $user['Role'];
             $_SESSION['user_id']  = $user['EmployeeID'];
             $_SESSION['name']     = $user['FirstName'];
@@ -47,8 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="form-grid">
       <div class="field-group">
-        <label for="first_name">ID Number *</label>
-        <input id="e_id" name="e_id" type="text"
+        <label for="e_id">ID Number *</label>
                value="<?= htmlspecialchars($_POST['e_id'] ?? '') ?>"
                class="<?= isset($errors['e_id']) ? 'input-error' : '' ?>" />
         <?php if (isset($errors['e_id'])): ?>
