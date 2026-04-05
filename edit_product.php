@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
                  P_Weight = ?, QuantityInStock = ?, L_ID = ?, M_ID = ?
              WHERE P_ID = ?"
         );
-        $stmt->bind_param('ssdddiiiii', $name, $desc, $costF, $saleF, $wtF, $qtyI, $lid, $mid, $id);
+        $stmt->bind_param('ssdddiiii', $name, $desc, $costF, $saleF, $wtF, $qtyI, $lid, $mid, $id);
  
         try {
             $stmt->execute();
